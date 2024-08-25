@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import axios from 'axios';
-import './App.css'; // Import the CSS file
+import React, { useState } from "react";
+import axios from "axios";
+import Select from "react-select"; // Import react-select
+import "./App.css"; // Import the CSS file
 
 interface ApiResponse {
   is_success: boolean;
@@ -13,28 +14,19 @@ interface ApiResponse {
 }
 
 const App: React.FC = () => {
-  const [jsonData, setJsonData] = useState<string>('');
+  const [jsonData, setJsonData] = useState<string>("");
   const [responseData, setResponseData] = useState<ApiResponse | null>(null);
-  const [selectedOptions, setSelectedOptions] = useState<{
-    Alphabets: boolean;
-    Numbers: boolean;
-    HighestLowercaseAlphabet: boolean;
-  }>({
-    Alphabets: false,
-    Numbers: false,
-    HighestLowercaseAlphabet: false,
-  });
+  const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setJsonData(e.target.value);
   };
 
-  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, checked } = e.target;
-    setSelectedOptions(prevState => ({
-      ...prevState,
-      [name]: checked,
-    }));
+  const handleSelectChange = (selected: any) => {
+    const selectedValues = selected
+      ? selected.map((item: any) => item.value)
+      : [];
+    setSelectedOptions(selectedValues);
   };
 
   const handleSubmit = async () => {
@@ -44,13 +36,16 @@ const App: React.FC = () => {
       console.log("Parsed Data:", parsedData); // Log the parsed data
 
       // Send the request to the backend
-      const response = await axios.post<ApiResponse>('https://bhfl-challenge-backend.onrender.com/bfhl', parsedData);
+      const response = await axios.post<ApiResponse>(
+        "https://bhfl-challenge-backend.onrender.com/bfhl",
+        parsedData
+      );
 
       console.log("Response Data:", response.data); // Log the response data
       setResponseData(response.data); // Update state with response data
     } catch (error) {
       console.error("Error:", error); // Log any errors
-      alert('Invalid JSON format or server error');
+      alert("Invalid JSON format or server error");
     }
   };
 
@@ -60,18 +55,31 @@ const App: React.FC = () => {
     return (
       <div className="filtered-response">
         <h3>Filtered Response</h3>
-        {selectedOptions.Alphabets && (
-          <div><strong>Alphabets:</strong> {responseData.alphabets.join(', ')}</div>
+        {selectedOptions.includes("Alphabets") && (
+          <div>
+            <strong>Alphabets:</strong> {responseData.alphabets.join(", ")}
+          </div>
         )}
-        {selectedOptions.Numbers && (
-          <div><strong>Numbers:</strong> {responseData.numbers.join(', ')}</div>
+        {selectedOptions.includes("Numbers") && (
+          <div>
+            <strong>Numbers:</strong> {responseData.numbers.join(", ")}
+          </div>
         )}
-        {selectedOptions.HighestLowercaseAlphabet && (
-          <div><strong>Highest Lowercase Alphabet:</strong> {responseData.highest_lowercase_alphabet.join(', ')}</div>
+        {selectedOptions.includes("HighestLowercaseAlphabet") && (
+          <div>
+            <strong>Highest Lowercase Alphabet:</strong>{" "}
+            {responseData.highest_lowercase_alphabet.join(", ")}
+          </div>
         )}
       </div>
     );
   };
+
+  const options = [
+    { value: "Alphabets", label: "Alphabets" },
+    { value: "Numbers", label: "Numbers" },
+    { value: "HighestLowercaseAlphabet", label: "Highest Lowercase Alphabet" },
+  ];
 
   return (
     <div className="app-container">
@@ -87,37 +95,26 @@ const App: React.FC = () => {
             onChange={handleInputChange}
             className="input-textarea"
           />
-          <button onClick={handleSubmit} className="submit-button">Submit</button>
-          <h3 className="label">Filter Options</h3>
-          <div className="checkbox-group">
-            <label>
-              <input
-                type="checkbox"
-                name="Alphabets"
-                checked={selectedOptions.Alphabets}
-                onChange={handleCheckboxChange}
+          <button onClick={handleSubmit} className="submit-button">
+            Submit
+          </button>
+
+          {/* Conditionally render the dropdowns only after receiving a successful response */}
+          {responseData && (
+            <>
+              <h3 className="label">Filter Options</h3>
+              <Select
+                isMulti
+                options={options}
+                onChange={handleSelectChange}
+                className="multi-select-dropdown"
+                styles={{
+                  container: (provided) => ({ ...provided, width: "100%" }),
+                }}
               />
-              Alphabets
-            </label>
-            <label>
-              <input
-                type="checkbox"
-                name="Numbers"
-                checked={selectedOptions.Numbers}
-                onChange={handleCheckboxChange}
-              />
-              Numbers
-            </label>
-            <label>
-              <input
-                type="checkbox"
-                name="HighestLowercaseAlphabet"
-                checked={selectedOptions.HighestLowercaseAlphabet}
-                onChange={handleCheckboxChange}
-              />
-              Highest Lowercase Alphabet
-            </label>
-          </div>
+            </>
+          )}
+
           {renderFilteredResponse()}
         </div>
         <div className="response-section">
@@ -125,9 +122,7 @@ const App: React.FC = () => {
           <pre>{JSON.stringify(responseData, null, 2)}</pre>
         </div>
       </div>
-      <footer className="footer">
-        Bhavesh Saluru | 21BCE9264
-      </footer>
+      <footer className="footer">Bhavesh Saluru | 21BCE9264</footer>
     </div>
   );
 };
